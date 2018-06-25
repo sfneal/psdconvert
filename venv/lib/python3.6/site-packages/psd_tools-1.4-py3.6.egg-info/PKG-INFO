@@ -1,0 +1,514 @@
+Metadata-Version: 1.1
+Name: psd-tools
+Version: 1.4
+Summary: Python package for working with Adobe Photoshop PSD files
+Home-page: https://github.com/kmike/psd-tools
+Author: Mikhail Korobov
+Author-email: kmike84@gmail.com
+License: MIT License
+Description: psd-tools
+        =========
+        
+        ``psd-tools`` is a package for reading Adobe Photoshop PSD files
+        (as described in specification_) to Python data structures.
+        
+        .. _specification: https://www.adobe.com/devnet-apps/photoshop/fileformatashtml/PhotoshopFileFormats.htm
+        
+        .. image:: https://img.shields.io/pypi/v/psd-tools.svg
+           :target: https://pypi.python.org/pypi/psd-tools
+           :alt: PyPI Version
+        
+        .. image:: https://img.shields.io/travis/psd-tools/psd-tools/master.svg
+           :alt: Build Status
+           :target: https://travis-ci.org/psd-tools/psd-tools
+        
+        Installation
+        ------------
+        
+        ::
+        
+            pip install psd-tools
+        
+        Pillow_ should be installed if you want work with PSD image and layer data:
+        export images to PNG, process them. PIL_ library should also work.
+        
+        ::
+        
+           pip install Pillow
+        
+        .. note::
+        
+            In order to extract images from 32bit PSD files PIL/Pillow must be built
+            with LITTLECMS or LITTLECMS2 support.
+        
+        psd-tools also has a rudimentary support for Pymaging_.
+        `Pymaging installation instructions`_ are available in pymaging docs.
+        If you want to use Pymaging instead of Pillow you'll also need packbits_
+        library::
+        
+              pip install packbits
+        
+        .. _PIL: http://www.pythonware.com/products/pil/
+        .. _Pillow: https://github.com/python-imaging/Pillow
+        .. _packbits: http://pypi.python.org/pypi/packbits/
+        .. _Pymaging: https://github.com/ojii/pymaging
+        .. _Pymaging installation instructions: http://pymaging.readthedocs.org/en/latest/usr/installation.html
+        
+        Usage
+        -----
+        
+        Load an image::
+        
+            >>> from psd_tools import PSDImage
+            >>> psd = PSDImage.load('my_image.psd')
+        
+        Read image header::
+        
+            >>> psd.header
+            PsdHeader(number_of_channels=3, height=200, width=100, depth=8, color_mode=RGB)
+        
+        Access its layers::
+        
+            >>> psd.layers
+            [<psd_tools.Group: 'Group 2', layer_count=1>,
+             <psd_tools.Group: 'Group 1', layer_count=1>,
+             <psd_tools.Layer: 'Background', size=100x200, x=0, y=0>]
+        
+        Work with a layer group::
+        
+            >>> group2 = psd.layers[0]
+            >>> group2.name
+            Group 2
+        
+            >>> group2.visible
+            True
+        
+            >>> group2.closed
+            False
+        
+            >>> group2.opacity
+            255
+        
+            >>> from psd_tools.constants import BlendMode
+            >>> group2.blend_mode == BlendMode.NORMAL
+            True
+        
+            >>> group2.layers
+            [<psd_tools.Layer: 'Shape 2', size=43x62, x=40, y=72)>]
+        
+        Work with a layer::
+        
+            >>> layer = group2.layers[0]
+            >>> layer.name
+            Shape 2
+        
+            >>> layer.bbox
+            BBox(x1=40, y1=72, x2=83, y2=134)
+        
+            >>> layer.bbox.width, layer.bbox.height
+            (43, 62)
+        
+            >>> layer.visible, layer.opacity, layer.blend_mode
+            (True, 255, u'norm')
+        
+            >>> layer.text_data.text
+            'Text inside a text box'
+        
+            >>> layer.as_PIL()
+            <PIL.Image.Image image mode=RGBA size=43x62 at ...>
+        
+        
+        Export a single layer::
+        
+            >>> layer_image = layer.as_PIL()
+            >>> layer_image.save('layer.png')
+        
+        Export the merged image::
+        
+            >>> merged_image = psd.as_PIL()
+            >>> merged_image.save('my_image.png')
+        
+        The same using Pymaging_::
+        
+            >>> merged_image = psd.as_pymaging()
+            >>> merged_image.save_to_path('my_image.png')
+            >>> layer_image = layer.as_pymaging()
+            >>> layer_image.save_to_path('layer.png')
+        
+        Export layer group (experimental)::
+        
+            >>> group_image = group2.as_PIL()
+            >>> group_image.save('group.png')
+        
+        
+        Why yet another PSD reader?
+        ---------------------------
+        
+        There are existing PSD readers for Python:
+        
+        * psdparse_;
+        * pypsd_;
+        * there is a PSD reader in PIL_ library;
+        * it is possible to write Python plugins for GIMP_.
+        
+        PSD reader in PIL is incomplete and contributing to PIL
+        is complicated because of the slow release process, but the main issue
+        with PIL for me is that PIL doesn't have an API for layer groups.
+        
+        GIMP is cool, but it is a huge dependency, its PSD parser
+        is not perfect and it is not easy to use GIMP Python plugin
+        from *your* code.
+        
+        I also considered contributing to pypsd or psdparse, but they are
+        GPL and I was not totally satisfied with the interface and the code
+        (they are really fine, that's me having specific style requirements).
+        
+        So I finally decided to roll out yet another implementation
+        that should be MIT-licensed, systematically based on the specification_
+        (it turns out the specs are incomplete and sometimes incorrect though);
+        parser should be implemented as a set of functions; the package should
+        have tests and support both Python 2.x and Python 3.x.
+        
+        .. _GIMP: http://www.gimp.org/
+        .. _psdparse: https://github.com/jerem/psdparse
+        .. _pypsd: https://code.google.com/p/pypsd
+        
+        
+        Design overview
+        ---------------
+        
+        The process of handling a PSD file is split into 3 stages:
+        
+        1) "Reading": the file is read and parsed to low-level data
+           structures that closely match the specification. No user-accessible
+           images are constructed; image resources blocks and additional layer
+           information are extracted but not parsed (they remain just keys
+           with a binary data). The goal is to extract all information
+           from a PSD file.
+        
+        2) "Decoding": image resource blocks and additional layer
+           information blocks are parsed to a more detailed data structures
+           (that are still based on a specification). There are a lot of PSD
+           data types and the library currently doesn't handle them all, but
+           it should be easy to add the parsing code for the missing PSD data
+           structures if needed.
+        
+        After (1) and (2) we have an in-memory data structure that closely
+        resembles PSD file; it should be fairly complete but very low-level
+        and not easy to use. So there is a third stage:
+        
+        3) "User-facing API": PSD image is converted to an user-friendly object
+           that supports layer groups, exporting data as ``PIL.Image`` or
+           ``pymaging.Image``, etc.
+        
+        Stage separation also means user-facing API may be opinionated:
+        if somebody doesn't like it then it should possible to build an
+        another API based on lower-level decoded PSD file.
+        
+        ``psd-tools`` tries not to throw away information from the original
+        PSD file; even if the library can't parse some info, this info
+        will be likely available somewhere as raw bytes (open a bug if this is
+        not the case). This should make it possible to modify and write PSD
+        files (currently not implemented; contributions are welcome).
+        
+        Features
+        --------
+        
+        Supported:
+        
+        * reading of RGB, RGBA, CMYK, CMYKA and Grayscale images;
+        * 8bit, 16bit and 32bit channels;
+        * all PSD compression methods are supported (not only the most
+          common RAW and RLE);
+        * image ICC profile is taken into account;
+        * many image resource types and tagged block types are decoded;
+        * layer effects information is decoded;
+        * Descriptor structures are decoded;
+        * there is an optional Cython extension to make the parsing fast;
+        * very basic & experimental layer merging.
+        
+        Not implemented:
+        
+        * reading of Duotone, LAB, etc. images;
+        * many image resource types and tagged blocks are not decoded
+          (they are attached to the result as raw bytes);
+        * some of the raw Descriptor values (like EngineData) are not decoded;
+        * this library can't reliably blend layers together: it is possible to export
+          a single layer and to export a final image, but rendering of
+          e.g. layer group may produce incorrect results;
+        * the writing of PSD images is not implemented;
+        * Pymaging_ support is limited: it only supports 8bit RGB/RGBA
+          images, ICC profiles are not applied, layer merging doesn't work, etc.
+        
+        If you need some of unimplemented features then please fire an issue
+        or implement it yourself (pull requests are welcome in this case).
+        
+        
+        Contributing
+        ------------
+        
+        Development happens at github: `source code <https://github.com/psd-tools/psd-tools>`__,
+        `bug tracker <https://github.com/psd-tools/psd-tools/issues>`__.
+        Feel free to submit ideas, bugs or pull requests.
+        
+        In case of bugs it would be helpful to provide a small PSD file
+        demonstrating the issue; this file may be added to a test suite.
+        
+        .. note::
+        
+            Unfortunately I don't have a license for Adobe Photoshop and use GIMP for
+            testing; PNG screenshots may be necessary in cases where GIMP fails.
+        
+        In order to run tests, make sure PIL/Pillow is built with LittleCMS
+        or LittleCMS2 support, install `tox <http://tox.testrun.org>`_ and type
+        
+        ::
+        
+            tox
+        
+        from the source checkout.
+        
+        The license is MIT.
+        
+        Acknowledgments
+        ---------------
+        
+        A full list of contributors can be found here:
+        https://github.com/psd-tools/psd-tools/blob/master/AUTHORS.txt
+        
+        Thanks to all guys who write PSD parsers: I learned a lot about PSD
+        file structure from the source code of psdparse_, GIMP_, libpsd_
+        and `psdparse C library`_; special thanks to `Paint.NET PSD Plugin`_ authors
+        for deciphering the "32bit layer + zip-with-prediction compression" case.
+        
+        Sponsors:
+        
+        * Leonid Gluzman;
+        * https://marvelapp.com/.
+        
+        .. _libpsd: http://sourceforge.net/projects/libpsd/
+        .. _psdparse C library: http://telegraphics.com.au/svn/psdparse/trunk/
+        .. _Paint.NET PSD Plugin: http://psdplugin.codeplex.com/
+        
+        
+        
+        1.4 (2017-01-02)
+        ----------------
+        
+        - Fixed reading of layer mask data (thanks Evgeny Kopylov);
+        - Python 2.6 support is dropped;
+        - Python 3.6 support is added (thanks Leendert Brouwer);
+        - extension is rebuilt with Cython 0.25.2.
+        
+        1.3 (2016-01-25)
+        ----------------
+        
+        - fixed references decoding (thanks Josh Drake);
+        - fixed PIL support for CMYK files (thanks Michael Wu);
+        - optional C extension is rebuilt with Cython 0.23.4;
+        - Python 3.2 support is dropped; the package still works in Python 3.2,
+          but the compatibility is no longer checked by tests, and so it can break
+          in future.
+        - declare Python 3.5 as supported.
+        
+        1.2 (2015-01-27)
+        ----------------
+        
+        - implemented extraction of embedded files (embedded smart objects) -
+          thanks Volker Braun;
+        - optional C extension is rebuilt with Cython 0.21.2.
+        - hg mirror on bitbucket is dropped, sorry!
+        
+        1.1 (2014-11-17)
+        ----------------
+        
+        - improved METADATA_SETTING decoding (thanks Evgeny Kopylov);
+        - layer comps decoding (thanks Evgeny Kopylov);
+        - improved smart objects decoding (thanks Joey Gentry);
+        - user API for getting layer transforms and placed layer size
+          (thanks Joey Gentry);
+        - IPython import is deferred to speedup ``psd-tools.py`` command-line utility;
+        - ``_RootGroup.__repr__`` is fixed;
+        - warning message building is more robust;
+        - optional C extension is rebuilt with Cython 0.21.1.
+        
+        1.0 (2014-07-24)
+        ----------------
+        
+        - Fixed reading of images with layer masks (thanks Evgeny Kopylov);
+        - improved mask data decoding (thanks Evgeny Kopylov);
+        - fixed syncronization in case of ``8B64`` signatures (thanks Evgeny Kopylov);
+        - fixed reading of layers with zero length (thanks Evgeny Kopylov);
+        - fixed Descriptor parsing (thanks Evgeny Kopylov);
+        - some of the descriptor structures and tagged block constants are renamed (thanks Evgeny Kopylov);
+        - PATH_SELECTION_STATE decoding (thanks Evgeny Kopylov);
+        - the library is switched to setuptools; docopt is now installed automatically.
+        
+        0.10 (2014-06-15)
+        -----------------
+        
+        - Layer effects parsing (thanks Evgeny Kopylov);
+        - trailing null bytes are stripped from descriptor strings
+          (thanks Evgeny Kopylov);
+        - "Reference" and "List" descriptor parsing is fixed
+          (thanks Evgeny Kopylov);
+        - scalar descriptor values (doubles, floats, booleans) are now returned
+          as scalars, not as lists of size 1 (thanks Evgeny Kopylov);
+        - fixed reading of EngineData past declared length
+          (thanks Carlton P. Taylor);
+        - "background color" Image Resource parsing (thanks Evgeny Kopylov);
+        - `psd_tools.decoder.actions.Enum.enum` field is renamed to
+          `psd_tools.decoder.actions.Enum.value` (thanks Evgeny Kopylov);
+        - code simplification - constants are now bytestrings as they should be
+          (thanks Evgeny Kopylov);
+        - Python 3.4 is supported.
+        
+        0.9.1 (2014-03-26)
+        ------------------
+        
+        - Improved merging of transparent layers (thanks Vladimir Timofeev);
+        - fixed layer merging and bounding box calculations for empty layers
+          (thanks Vladimir Timofeev);
+        - C extension is rebuilt with Cython 0.20.1.
+        
+        0.9 (2013-12-03)
+        ----------------
+        
+        - `psd-tools.py` command-line interface is changed, 'debug' command is added;
+        - pretty-printing of internal structures;
+        - pymaging support is fixed;
+        - allow 'MeSa' to be a signature for image resource blocks
+          (thanks Alexey Buzanov);
+        - `psd_tools.debug.debug_view` utility function is fixed;
+        - Photoshop CC constants are added;
+        - Photoshop CC vector origination data is decoded;
+        - binary data is preserved if descriptor parsing fails;
+        - more verbose logging for PSD reader;
+        - channel data reader became more robust - now it doesn't read past
+          declared channel length;
+        - `psd-tools.py --version` command is fixed;
+        - `lsdk` tagged blocks parsing: this fixes some issues with layer grouping
+          (thanks Ivan Maradzhyiski for the bug report and the patch);
+        - CMYK images support is added (thanks Alexey Buzanov, Guillermo Rauch and
+          https://github.com/a-e-m for the help);
+        - Grayscale images support is added (thanks https://github.com/a-e-m);
+        - LittleCMS is now optional (but it is still required to get proper colors).
+        
+        0.8.4 (2013-06-12)
+        ------------------
+        
+        - Point and Millimeter types are added to UnitFloatType (thanks Doug Ellwanger).
+        
+        0.8.3 (2013-06-01)
+        ------------------
+        
+        - Some issues with descriptor parsing are fixed (thanks Luke Petre).
+        
+        0.8.2 (2013-04-12)
+        ------------------
+        
+        - Python 2.x: reading data from file-like objects is fixed
+          (thanks Pavel Zinovkin).
+        
+        0.8.1 (2013-03-02)
+        ------------------
+        
+        - Fixed parsing of layer groups without explicit OPEN_FOLDER mark;
+        - Cython extension is rebuilt with Cython 0.18.
+        
+        0.8 (2013-02-26)
+        ----------------
+        
+        - Descriptor parsing (thanks Oliver Zheng);
+        - text (as string) is extracted from text layers (thanks Oliver Zheng);
+        - improved support for optional building of Cython extension.
+        
+        0.7.1 (2012-12-27)
+        ------------------
+        
+        - Typo is fixed: ``LayerRecord.cilpping`` should be ``LayerRecord.clipping``.
+          Thanks Oliver Zheng.
+        
+        0.7 (2012-11-08)
+        ----------------
+        
+        - Highly experimental: basic layer merging is implemented
+          (e.g. it is now possible to export layer group to a PIL image);
+        - ``Layer.visible`` no longer takes group visibility in account;
+        - ``Layer.visible_global`` is the old ``Layer.visible``;
+        - ``psd_tools.user_api.combined_bbox`` made public;
+        - ``Layer.width`` and ``Layer.height`` are removed (use ``layer.bbox.width``
+          and ``layer.bbox.height`` instead);
+        - ``pil_support.composite_image_to_PIL`` is renamed to ``pil_support.extract_composite_image`` and
+          ``pil_support.layer_to_PIL`` is renamed to ``pil_support.extract_layer_image``
+          in order to have the same API for ``pil_support`` and ``pymaging_support``.
+        
+        0.6 (2012-11-06)
+        ----------------
+        
+        - ``psd.composite_image()`` is renamed to ``psd.as_PIL()``;
+        - Pymaging support: ``psd.as_pymaging()`` and ``layer.as_pymaging()`` methods.
+        
+        
+        0.5 (2012-11-05)
+        ----------------
+        
+        - Support for zip and zip-with-prediction compression methods is added;
+        - support for 16/32bit layers is added;
+        - optional Cython extension for faster zip-with-prediction decompression;
+        - other speed improvements.
+        
+        0.2 (2012-11-04)
+        ----------------
+        
+        - Initial support for 16bit and 32bit PSD files: ``psd-tools`` v0.2 can
+          read composite (merged) images for such files and extract information
+          (names, dimensions, hierarchy, etc.) about layers and groups of 16/32bit PSD;
+          extracting image data for distinct layers in 16/32bit PSD files is not
+          suported yet;
+        - better ``Layer.__repr__``;
+        - ``bbox`` property for ``Group``.
+        
+        0.1.4 (2012-11-01)
+        ------------------
+        
+        Packaging is fixed in this release.
+        
+        0.1.3 (2012-11-01)
+        ------------------
+        
+        - Better support for 32bit images (still incomplete);
+        - reader is able to handle "global" tagged layer info blocks that
+          was previously discarded.
+        
+        0.1.2 (2012-10-30)
+        ------------------
+        
+        - warn about 32bit images;
+        - transparency support for composite images.
+        
+        0.1.1 (2012-10-29)
+        ------------------
+        
+        Initial release (v0.1 had packaging issues).
+        
+Keywords: pymaging psd imaging pil pillow
+Platform: UNKNOWN
+Classifier: Development Status :: 4 - Beta
+Classifier: Intended Audience :: Developers
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Programming Language :: Python
+Classifier: Programming Language :: Python :: 2
+Classifier: Programming Language :: Python :: 2.7
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.3
+Classifier: Programming Language :: Python :: 3.4
+Classifier: Programming Language :: Python :: 3.5
+Classifier: Programming Language :: Python :: Implementation :: CPython
+Classifier: Programming Language :: Python :: Implementation :: PyPy
+Classifier: Topic :: Multimedia :: Graphics
+Classifier: Topic :: Multimedia :: Graphics :: Viewers
+Classifier: Topic :: Multimedia :: Graphics :: Graphics Conversion
+Classifier: Topic :: Software Development :: Libraries :: Python Modules
+Requires: docopt (>= 0.5)
+Requires: Pillow
