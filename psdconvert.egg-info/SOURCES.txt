@@ -1,0 +1,8 @@
+setup.py
+psdconvert/__init__.py
+psdconvert/convert.py
+psdconvert.egg-info/PKG-INFO
+psdconvert.egg-info/SOURCES.txt
+psdconvert.egg-info/dependency_links.txt
+psdconvert.egg-info/requires.txt
+psdconvert.egg-info/top_level.txt
