@@ -28,7 +28,7 @@ Create a virtual development environment and install the latest version of dirut
 PyPi distribution
 
 ```
-pip install dirutility
+pip install psdconvert
 ```
 
 GitHub distribution
