@@ -6,7 +6,7 @@ from tqdm import tqdm
 class ConvertPSD:
     def __init__(self, source, destination):
         """
-        Converts PSD file into another image format using the psd_tools library
+        Converts PSD file into another image format.
         :param src: Full path of source file
         :param dst: Full path of destination file
         """
@@ -30,7 +30,7 @@ class ConvertPSD:
 class BatchConvertPSD:
     def __init__(self, source, destination, file_type):
         """
-        Batch convert PSD files into another image format
+        Converts directory of PSD files into another image format
         :param source: Full path of source folder
         :param destination: Full path of destination folder
         :param file_type: Destination image file type
