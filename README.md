@@ -23,7 +23,7 @@ pip install --upgrade pip
 
 ### Installing
 
-Create a virtual development environment and install the latest version of dirutility from PyPi or github
+Create a virtual development environment and install the latest version of psdconvert from PyPi or github
 
 PyPi distribution
 
@@ -44,7 +44,7 @@ pip install git+https://github.com/mrstephenneal/psdconvert.git
 
 ## Example Usage
 
-Outlined below are basic uses of the four main classes of the directory utility python package.
+Outlined below are basic uses of the four main classes of the PSD Convert python package.
 
 * ConvertPSD - Converts PSD file into another image format
 * BatchConvertPSD - Converts directory of PSD files into another image format
