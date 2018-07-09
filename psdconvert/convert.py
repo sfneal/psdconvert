@@ -4,14 +4,14 @@ from tqdm import tqdm
 
 
 class ConvertPSD:
-    def __init__(self, src, dst):
+    def __init__(self, source, destination):
         """
         Converts PSD file into another image format using the psd_tools library
         :param src: Full path of source file
         :param dst: Full path of destination file
         """
-        self.src = src
-        self.dst = dst
+        self.src = source
+        self.dst = destination
         self.save()
 
     def save(self):
