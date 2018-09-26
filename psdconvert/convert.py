@@ -4,21 +4,17 @@ from tqdm import tqdm
 
 
 class ConvertPSD:
-    def __init__(self, source, destination):
+    def __init__(self, source):
         """
         Converts PSD file into another image format.
-        :param src: Full path of source file
-        :param dst: Full path of destination file
+        :param source: Full path of source file
         """
         self.src = source
-        self.dst = destination
-        self.save()
 
-    def save(self):
+    def save(self, destination):
         merged_image = self.load()
-        merged_image.save(self.dst)
+        merged_image.save(destination)
         del merged_image
-        return self.dst
 
     def load(self):
         psd = PSDImage.load(self.src)
