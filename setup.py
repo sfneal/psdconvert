@@ -5,7 +5,9 @@ setup(
     version='0.1.3',
     packages=find_packages(),
     install_requires=[
-        'psd_tools', 'tqdm'
+        'psd_tools',
+        'Pillow',
+        'tqdm'
     ],
     url='https://github.com/mrstephenneal/psdconvert',
     license='MIT License',
