@@ -15,6 +15,7 @@ class ConvertPSD:
         merged_image = self.load()
         merged_image.save(destination)
         del merged_image
+        return destination
 
     def load(self):
         psd = PSDImage.load(self.src)
