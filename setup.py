@@ -2,9 +2,11 @@ from setuptools import setup, find_packages
 
 setup(
     name='psdconvert',
-    version='0.1.2',
+    version='0.1.3',
     packages=find_packages(),
-    install_requires=['psd_tools', 'Pillow', 'tqdm'],
+    install_requires=[
+        'psd_tools', 'tqdm'
+    ],
     url='https://github.com/mrstephenneal/psdconvert',
     license='MIT License',
     author='Stephen Neal',

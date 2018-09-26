@@ -1,5 +1,5 @@
-from psd_tools import PSDImage
 import os
+from psd_tools import PSDImage
 from tqdm import tqdm
 
 
