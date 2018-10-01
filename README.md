@@ -1,5 +1,7 @@
 # Photoshop Convert
 
+[![GuardRails badge](https://badges.production.guardrails.io/mrstephenneal/psdconvert.svg)](https://www.guardrails.io)
+
 psdconvert is a Python package for efficiently converting photoshop files into another image format.
 
 _Photoshop is an essential tool for many projects, often times we find ourselves working on a large number of files that are must be saved in a smaller format (such as .png).  psdconvert simplifies this process by converting psd files without the overhead of a GUI._
