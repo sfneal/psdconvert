@@ -9,6 +9,7 @@ class ConvertPSD:
         Converts PSD file into another image format.
         :param source: Full path of source file
         """
+        assert source.endswith('.psd')
         self.src = source
 
     def save(self, destination):
@@ -41,6 +42,6 @@ class BatchConvertPSD:
         return [os.path.join(source, f) for f in os.listdir(source)]
 
     def convert(self):
-        for psd in tqdm(self.source_files, desc='Batch converting PSDs'):
+        for psd in tqdm(self.source_files, desc='Batch converting PSDs', total=len(self.source_files), unit='psd'):
             destination = os.path.join(self.destination, str(os.path.basename(psd)[:-4] + self.file_type))
-            ConvertPSD(psd, destination)
+            ConvertPSD(psd).save(destination)

@@ -1,6 +1,6 @@
 Metadata-Version: 1.0
 Name: psdconvert
-Version: 0.1.8
+Version: 1.0.0
 Summary: PSD conversion package for python
 Home-page: https://github.com/mrstephenneal/psdconvert
 Author: Stephen Neal

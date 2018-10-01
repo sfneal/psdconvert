@@ -1,4 +1,4 @@
-from psdconvert.convert import BatchConvertPSD, ConvertPSD
+from psdconvert.psdconvert import BatchConvertPSD, ConvertPSD
 
 
 __all__ = ["BatchConvertPSD", "ConvertPSD"]

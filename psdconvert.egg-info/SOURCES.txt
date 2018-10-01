@@ -2,7 +2,7 @@ README.md
 setup.py
 psdconvert/__init__.py
 psdconvert/_version.py
-psdconvert/convert.py
+psdconvert/psdconvert.py
 psdconvert.egg-info/PKG-INFO
 psdconvert.egg-info/SOURCES.txt
 psdconvert.egg-info/dependency_links.txt
