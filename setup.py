@@ -2,10 +2,10 @@ from setuptools import setup, find_packages
 
 setup(
     name='psdconvert',
-    version='0.1.5',
+    version='0.1.6',
     packages=find_packages(),
     install_requires=[
-        'psd_tools',
+        'psd_tools2',
         'Pillow',  # Not explicitly required by psd_tools
         'tqdm'
     ],
