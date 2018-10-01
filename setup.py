@@ -13,7 +13,7 @@ setup(
     version=get_version(),
     packages=find_packages(),
     install_requires=[
-        'psd_tools3',
+        'psd_tools3>=1.8.1',
         'Pillow',  # Not explicitly required by psd_tools
         'tqdm'
     ],
