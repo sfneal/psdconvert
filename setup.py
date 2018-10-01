@@ -1,11 +1,19 @@
+import os
 from setuptools import setup, find_packages
+
+
+def get_version():
+    filename = os.path.join(os.path.dirname(__file__), 'psd_tools', '_version.py')
+    with open(filename, 'rb') as fp:
+        return fp.read().decode('utf8').split('=')[1].strip(" \n'")
+
 
 setup(
     name='psdconvert',
-    version='0.1.6',
+    version=get_version(),
     packages=find_packages(),
     install_requires=[
-        'psd_tools2',
+        'psd_tools3',
         'Pillow',  # Not explicitly required by psd_tools
         'tqdm'
     ],
