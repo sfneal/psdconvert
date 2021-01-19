@@ -14,7 +14,6 @@ setup(
     packages=find_packages(),
     install_requires=[
         'psd_tools3>=1.8.2',
-        'Pillow>=5.3.0',  # Not explicitly required by psd_tools
         'tqdm'
     ],
     url='https://github.com/mrstephenneal/psdconvert',
