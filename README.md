@@ -1,5 +1,11 @@
 # Photoshop Convert
 
+[![Build Status](https://travis-ci.com/sfneal/psdconvert.svg?branch=master)](https://travis-ci.com/sfneal/psdconvert)
+[![PyPi version](https://img.shields.io/pypi/v/psdconvert)](https://pypi.org/project/psdconvert)
+[![PyPi Python support](https://img.shields.io/pypi/pyversions/psdconvert)](https://pypi.org/project/psdconvert)
+[![PyPi downloads per month](https://img.shields.io/pypi/dm/psdconvert)](https://pypi.org/project/psdconvert)
+[![PyPi license](https://img.shields.io/pypi/l/psdconvert)](https://pypi.org/project/psdconvert)
+
 psdconvert is a Python package for efficiently converting photoshop files into another image format.
 
 _Photoshop is an essential tool for many projects, often times we find ourselves working on a large number of files that are must be saved in a smaller format (such as .png).  psdconvert simplifies this process by converting psd files without the overhead of a GUI._
